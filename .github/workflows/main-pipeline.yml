@@ -20,6 +20,13 @@ on:
         default: true
 
 jobs:
+
+  # ROOT JOB (no needs)
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
   secret-detection:
     needs: setup
     if: github.ref_name != 'main' && inputs.run_secret_detection
