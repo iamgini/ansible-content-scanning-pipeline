@@ -39,7 +39,8 @@ jobs:
 
   lint:
     needs: setup
-    if: github.ref_name != 'main' && inputs.run_lint
+    # if: github.ref_name != 'main' && inputs.run_lint
+    if: inputs.run_lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +49,8 @@ jobs:
 
   sast:
     needs: setup
-    if: github.ref_name != 'main' && inputs.run_sast
+    # if: github.ref_name != 'main' && inputs.run_sast
+    if: inputs.run_sast
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +59,8 @@ jobs:
 
   tagging:
     needs: setup
-    if: github.ref_name == 'main' && inputs.run_tagging
+    # if: github.ref_name == 'main' && inputs.run_tagging
+    if: inputs.run_tagging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,7 +69,8 @@ jobs:
 
   sign:
     needs: tagging
-    if: github.ref_name == 'main' && inputs.run_sign
+    # if: github.ref_name == 'main' && inputs.run_sign
+    if: inputs.run_sign
     runs-on: ubuntu-latest
     steps:
       - name: Sign artifact
