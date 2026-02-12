@@ -29,7 +29,8 @@ jobs:
 
   secret-detection:
     needs: setup
-    if: github.ref_name != 'main' && inputs.run_secret_detection
+    # if: github.ref_name != 'main' && inputs.run_secret_detection
+    if: inputs.run_secret_detection
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
