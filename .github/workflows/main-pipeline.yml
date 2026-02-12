@@ -2,14 +2,64 @@ name: Main Pipeline
 
 on:
   workflow_call:
+    inputs:
+      run_secret_detection:
+        type: boolean
+        default: true
+      run_lint:
+        type: boolean
+        default: true
+      run_sast:
+        type: boolean
+        default: true
+      run_tagging:
+        type: boolean
+        default: true
+      run_sign:
+        type: boolean
+        default: true
 
 jobs:
-  lint:
+  secret-detection:
+    needs: setup
+    if: github.ref_name != 'main' && inputs.run_secret_detection
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Run secret detection
+        run: echo "Running secret detection"
 
+  lint:
+    needs: setup
+    if: github.ref_name != 'main' && inputs.run_lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Run lint
-        run: |
-          echo "Running lint checks"
-          # add your scanning steps here
+        run: echo "Running lint checks"
+
+  sast:
+    needs: setup
+    if: github.ref_name != 'main' && inputs.run_sast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run SAST
+        run: echo "Running SAST scans"
+
+  tagging:
+    needs: setup
+    if: github.ref_name == 'main' && inputs.run_tagging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag release
+        run: echo "Tagging release"
+
+  sign:
+    needs: tagging
+    if: github.ref_name == 'main' && inputs.run_sign
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sign artifact
+        run: echo "Signing artifact"
