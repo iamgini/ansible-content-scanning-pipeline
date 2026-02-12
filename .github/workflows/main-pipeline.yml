@@ -1,0 +1,15 @@
+name: Main Pipeline
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run lint
+        run: |
+          echo "Running lint checks"
+          # add your scanning steps here
