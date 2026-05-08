@@ -1,0 +1,94 @@
+name: Publish Collection Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      publish_to_galaxy:
+        type: boolean
+        default: true
+      publish_to_pah:
+        type: boolean
+        default: false
+      pah_server:
+        type: string
+        default: ''
+    secrets:
+      ANSIBLE_GALAXY_TOKEN:
+        required: false
+      PAH_TOKEN:
+        required: false
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      namespace: ${{ steps.meta.outputs.namespace }}
+      name: ${{ steps.meta.outputs.name }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Read galaxy.yml metadata
+        id: meta
+        run: |
+          echo "namespace=$(grep '^namespace:' galaxy.yml | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "name=$(grep '^name:' galaxy.yml | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "version=$(grep '^version:' galaxy.yml | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Build collection
+        run: ansible-galaxy collection build --force
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-tarball
+          path: ${{ steps.meta.outputs.namespace }}-${{ steps.meta.outputs.name }}-${{ steps.meta.outputs.version }}.tar.gz
+          retention-days: 1
+
+  publish-galaxy:
+    needs: build
+    if: inputs.publish_to_galaxy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: collection-tarball
+
+      - name: Publish to Ansible Galaxy
+        env:
+          ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
+        run: |
+          ansible-galaxy collection publish \
+            ${{ needs.build.outputs.namespace }}-${{ needs.build.outputs.name }}-${{ needs.build.outputs.version }}.tar.gz \
+            --api-key "$ANSIBLE_GALAXY_TOKEN"
+
+  publish-pah:
+    needs: build
+    if: inputs.publish_to_pah
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: collection-tarball
+
+      - name: Publish to Private Automation Hub
+        env:
+          PAH_TOKEN: ${{ secrets.PAH_TOKEN }}
+        run: |
+          ansible-galaxy collection publish \
+            ${{ needs.build.outputs.namespace }}-${{ needs.build.outputs.name }}-${{ needs.build.outputs.version }}.tar.gz \
+            --server "${{ inputs.pah_server }}" \
+            --api-key "$PAH_TOKEN" \
+            --ignore-certs
